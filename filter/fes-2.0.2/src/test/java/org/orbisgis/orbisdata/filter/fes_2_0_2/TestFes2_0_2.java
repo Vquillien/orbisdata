@@ -86,7 +86,7 @@ public class TestFes2_0_2 {
 
 
     /**
-     * Test of the static method
+     * Test of the static method for SortBy
      *
      * @throws JAXBException
      */
@@ -99,6 +99,12 @@ public class TestFes2_0_2 {
         Assert.assertEquals(XmlToSql(element).toString(), "depth, temperature DESC");
     }
 
+
+    /**
+     * Test of the static method for the comparison operator
+     *
+     * @throws JAXBException
+     */
     @Test
     public void testXmlToSqlFilterComparison() throws JAXBException {
 
@@ -129,19 +135,72 @@ public class TestFes2_0_2 {
         //Branch PropertyIsGreaterThan
         xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsGreaterThan.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
-        System.out.println(XmlToSql(element).toString());
 
         Assert.assertEquals(XmlToSql(element).toString(), "DEPTH > 30 ");
     }
 
-
+    /**
+     * Test of the static method for the spatial operator
+     *
+     * @throws JAXBException
+     */
     @Test
-    public void testXmlToSqlFilterStatial() throws JAXBException {
+    public void testXmlToSalFilterSpatial() throws JAXBException {
 
-        //Branch Between
-        xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsBetween.xml");
+        //Branch Equals
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_Equals.xml");
         JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "ST_Equals( 1Parameter , 2Parameter )");
+
+        //Branch Dwithin
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_DWithIn.xml");
+        element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "ST_DWithin( London , Paris , 344.0 )");
+
     }
+
+    /**
+     * Test of the static method for the type Function
+     *
+     * @throws JAXBException
+     */
+    @Test
+    public void testXmlToSalFilterFunction() throws JAXBException {
+
+        //Branch Equals
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_Function.xml");
+        JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "TheFunction( 1Parameter , 2Parameter )");
+    }
+
+    /**
+     * Test of the static method for the type logical
+     *
+     * @throws JAXBException
+     */
+    @Test
+    public void testXmlToSalFilterLogical() throws JAXBException {
+
+        //Branch AndOr
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_OrAnd.xml");
+        JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
+        System.out.println(XmlToSql(element).toString());
+        Assert.assertEquals(XmlToSql(element).toString(), "( ( depth > 80 And depth < 200 ) Or depth BETWEEN 100 200 ) ");
+
+
+        //Branch AndOr
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_Not.xml");
+        element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "!( ( depth > 80 And !( depth < 200 ) ) ) ");
+    }
+
+
+
+
 
 
 }
