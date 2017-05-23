@@ -56,6 +56,7 @@ public class FesToSql {
      */
     public static StringBuilder XmlToSql(Object objectFromFilterXml ){
         StringBuilder returnSQL = new StringBuilder();
+
         if (objectFromFilterXml instanceof JAXBElement) {
             // first node : One branch for Filter and one for SortBy
             switch (((JAXBElement) objectFromFilterXml).getName().getLocalPart()){
@@ -63,85 +64,180 @@ public class FesToSql {
                 case "Filter":
                     FilterType filterType = (FilterType) ((JAXBElement) objectFromFilterXml).getValue();
                     // know the type of operator
+
                     if (filterType.isSetComparisonOps()) {
                         JAXBElement<ComparisonOpsType> comparisonElement = (JAXBElement<ComparisonOpsType>) filterType.getComparisonOps();
+
                         if (comparisonElement.getName().getLocalPart() == "PropertyIsBetween") {
                             PropertyIsBetweenType propertyIsBetweenType = (PropertyIsBetweenType) comparisonElement.getValue();
                             JAXBElement lowerBoundary = propertyIsBetweenType.getLowerBoundary().getExpression();
                             JAXBElement upperBoundary = propertyIsBetweenType.getUpperBoundary().getExpression();
+
                             if (propertyIsBetweenType.isSetExpression()) {
                                 returnSQL.append(getExpressionRecursive(propertyIsBetweenType.getExpression()));
-                                returnSQL.append("BETWEEN");
+                                returnSQL.append("BETWEEN ");
+
                                 if (propertyIsBetweenType.isSetLowerBoundary())
                                     returnSQL.append(getExpressionRecursive(lowerBoundary));
+
                                 if (propertyIsBetweenType.isSetUpperBoundary())
                                     returnSQL.append(getExpressionRecursive(upperBoundary));
+
                             } else returnSQL.append("The column isn't defined");
+
                         } else if (comparisonElement.getName().getLocalPart() == "PropertyIsLike") {
+
                             PropertyIsLikeType propertyIsLikeType = (PropertyIsLikeType) comparisonElement.getValue();
                             if (propertyIsLikeType.isSetExpression()) {
                                 List<JAXBElement<?>> list = propertyIsLikeType.getExpression();
+
                                 for (JAXBElement element : list) {
                                     returnSQL.append(getExpressionRecursive(element));
+
                                     if (list.get(0) == element) {
-                                        returnSQL.append("LIKE");
+                                        returnSQL.append("LIKE ");
                                     }
                                 }
                             }
+
                         } else if (comparisonElement.getName().getLocalPart() == "PropertyIsNil") {
                             PropertyIsNilType propertyIsNilType = (PropertyIsNilType) comparisonElement.getValue();
+
                             if (propertyIsNilType.isSetExpression()) {
                                 returnSQL.append(getExpressionRecursive(propertyIsNilType.getExpression()));
                                 returnSQL.append("IS NIL");
                             }
+
                         } else if (comparisonElement.getName().getLocalPart() == "PropertyIsNull") {
                             PropertyIsNullType propertyIsNullType = (PropertyIsNullType) comparisonElement.getValue();
+
                             if (propertyIsNullType.isSetExpression()) {
                                 returnSQL.append(getExpressionRecursive(propertyIsNullType.getExpression()));
                                 returnSQL.append("IS NULL");
                             }
-                        } else {//type BinaryComparisonOpType
+
+                        } else {
+                            //type BinaryComparisonOpType
                             BinaryComparisonOpType binaryComparisonOpType = (BinaryComparisonOpType) comparisonElement.getValue();
+
                             if (binaryComparisonOpType.isSetExpression()) {
                                 List<JAXBElement<?>> list = binaryComparisonOpType.getExpression();
+
                                 for (JAXBElement element : list) {
                                     returnSQL.append(getExpressionRecursive(element));
+
                                     if (list.get(0) == element) {
+
                                         switch (comparisonElement.getName().getLocalPart()) {
                                             case "PropertyIsGreaterThan":
-                                                returnSQL.append(">");
+                                                returnSQL.append("> ");
                                                 break;
                                             case "PropertyIsLessThan":
-                                                returnSQL.append("<");
+                                                returnSQL.append("< ");
                                                 break;
                                             case "PropertyEqualTo":
-                                                returnSQL.append("=");
+                                                returnSQL.append("= ");
                                                 break;
                                             case "PropertyIsNotEqualTo":
-                                                returnSQL.append("!=");
+                                                returnSQL.append("!= ");
                                                 break;
                                             case "PropertyIsLessThanOrEqualTo":
-                                                returnSQL.append("<=");
+                                                returnSQL.append("<= ");
                                                 break;
                                             case "PropertyIsGreaterThanOrEqualTo":
-                                                returnSQL.append(">=");
+                                                returnSQL.append(">= ");
                                                 break;
                                         }
                                     }
                                 }
                             }
                         }
+                    } else if (filterType.isSetSpatialOps()) {
+                        JAXBElement<SpatialOpsType> spatialElement = (JAXBElement<SpatialOpsType>) filterType.getSpatialOps();
+
+                        if (spatialElement.getName().getLocalPart().equals("BBOX")) {
+                            BBOXType bboxType = (BBOXType) spatialElement.getValue();
+                            if (bboxType.isSetExpressionOrAny()) {
+                                List<Object> list = bboxType.getExpressionOrAny();
+                                for (Object obj : list) {
+                                    if (obj instanceof JAXBElement) {
+
+                                    }
+                                }
+
+                            } else if (spatialElement.getName().getLocalPart().equals("Beyond") || spatialElement.getName().getLocalPart().equals("DWithin")) {
+                                DistanceBufferType distanceBufferType = (DistanceBufferType) spatialElement.getValue();
+
+                            } else {
+                                BinarySpatialOpType binarySpatialOpType = (BinarySpatialOpType) spatialElement.getValue();
+
+                                if (binarySpatialOpType.isSetExpressionOrAny()) {
+                                    List<Object> list = binarySpatialOpType.getExpressionOrAny();
+
+                                    for (Object obj : list) {
+                                        if (obj instanceof JAXBElement) {
+
+                                            if (list.get(0) == obj) {//if beginning
+
+                                                switch (spatialElement.getName().getLocalPart()) {
+                                                    case "Equals":
+                                                        returnSQL.append("ST_Equals( ");
+                                                        break;
+                                                    case "Disjoint":
+                                                        returnSQL.append("ST_Disjoint( ");
+                                                        break;
+                                                    case "Touches":
+                                                        returnSQL.append("ST_Touches( ");
+                                                        break;
+                                                    case "Overlaps":
+                                                        returnSQL.append("ST_Overlaps( ");
+                                                        break;
+                                                    case "Crosses":
+                                                        returnSQL.append("ST_Crosses( ");
+                                                        break;
+                                                    case "Intersects":
+                                                        returnSQL.append("ST_Intersects( ");
+                                                        break;
+                                                    case "Contains":
+                                                        returnSQL.append("ST_Contains( ");
+                                                        break;
+                                                    case "Within":
+                                                        returnSQL.append("ST_Within( ");
+                                                        break;
+                                                }
+                                                returnSQL.append(getExpressionRecursive((JAXBElement) obj));
+                                            }
+                                        } else {
+                                            returnSQL.append(" " + obj.toString() + " ");
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
                     } else if (filterType.isSetLogicOps()) {
+
                         JAXBElement<LogicOpsType> logicalElement = (JAXBElement<LogicOpsType>) filterType.getLogicOps();
+
                         if (logicalElement.getName().getLocalPart() == "Not") {
                             UnaryLogicOpType unaryLogicOpType = (UnaryLogicOpType) logicalElement.getValue();
+
                         } else {
                             BinaryLogicOpType binaryLogicOpType = (BinaryLogicOpType) logicalElement.getValue();
+
+                            if (binaryLogicOpType.isSetComparisonOpsOrSpatialOpsOrTemporalOps()) {
+                                List<JAXBElement<?>> list = binaryLogicOpType.getComparisonOpsOrSpatialOpsOrTemporalOps();
+
+                                for (JAXBElement element : list) {
+                                    returnSQL.append(getExpressionRecursive(element));
+                                    if (list.get(0) == element) {
+
+                                    }
+                                }
+                            }
                         }
-                    } else if (filterType.isSetSpatialOps()) {
-                        //to add after
                     } else if (filterType.isSetFunction()) {
-                        //to add after
+
                     } else if (filterType.isSetId()) {
                         //to add after
                     } else if (filterType.isSetExtensionOps()) {
@@ -151,35 +247,34 @@ public class FesToSql {
                     }
                     break;
                 case "SortBy":
-
                     SortByType sortByType = (SortByType) ((JAXBElement) objectFromFilterXml).getValue();
+
                     if (sortByType.isSetSortProperty()) {
                         List<SortPropertyType> listProperty = sortByType.getSortProperty();
                         Iterator<SortPropertyType> listPropertyIterator = listProperty.iterator();
+
                         while (listPropertyIterator.hasNext()) {
                             SortPropertyType property = listPropertyIterator.next();
 
                             if (listPropertyIterator.hasNext() && property.isSetSortOrder()) {
-
                                 returnSQL.append(property.getValueReference());
                                 returnSQL.append(property.getSortOrder().value() + ", ");
 
                             } else if (listPropertyIterator.hasNext() && !(property.isSetSortOrder())) {
-
                                 returnSQL.append(property.getValueReference() + ", ");
 
                             } else if (!(listPropertyIterator.hasNext()) && (property.isSetSortOrder())) {
-
                                 returnSQL.append(property.getValueReference() + " ");
                                 returnSQL.append(property.getSortOrder());
+
                             } else {
                                 returnSQL.append(property.getValueReference());
                             }
                         }
                     }
                     break;
-
             }
+
         }
         return returnSQL;
     }
@@ -187,6 +282,7 @@ public class FesToSql {
 
     private static StringBuilder getExpressionRecursive(JAXBElement element){
         StringBuilder stringBuilder = new StringBuilder();
+
         if(element.getName().getLocalPart()=="Function"){
             FunctionType functionType = (FunctionType) element.getValue();
             stringBuilder.append(functionType.getName()+"(");
@@ -195,19 +291,23 @@ public class FesToSql {
             for(JAXBElement exp : listExpression){
                 getExpressionRecursive(exp);
             }
+
         }else if(element.getName().getLocalPart()=="ValueReference"){
-            stringBuilder.append(" "+element.getValue().toString()+" ");
+            stringBuilder.append(element.getValue().toString()+" ");
 
         }else if(element.getName().getLocalPart()=="Literal"){
             element = (JAXBElement<LiteralType>) element;
             LiteralType literalType = (LiteralType) element.getValue();
             List list = literalType.getContent();
+
             for(Object obj : list){
-                stringBuilder.append(" "+obj.toString()+" ");
+                stringBuilder.append(obj.toString()+" ");
             }
+
         }else{
             stringBuilder.append(" "+element.getValue().toString()+" ");
         }
+
         return stringBuilder;
     }
 }

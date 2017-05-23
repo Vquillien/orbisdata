@@ -100,13 +100,13 @@ public class TestFes2_0_2 {
     }
 
     @Test
-    public void testXmlToSqlFilter() throws JAXBException {
+    public void testXmlToSqlFilterComparison() throws JAXBException {
 
         //Branch Between
         xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsBetween.xml");
         JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "depth BETWEEN 100  200 ");
+        Assert.assertEquals(XmlToSql(element).toString(), "depth BETWEEN 100 200 ");
 
         //Branch Like
         xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsLike.xml");
@@ -129,7 +129,19 @@ public class TestFes2_0_2 {
         //Branch PropertyIsGreaterThan
         xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsGreaterThan.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
-        System.out.println(XmlToSql(element));
+        System.out.println(XmlToSql(element).toString());
+
+        Assert.assertEquals(XmlToSql(element).toString(), "DEPTH > 30 ");
     }
+
+
+    @Test
+    public void testXmlToSqlFilterStatial() throws JAXBException {
+
+        //Branch Between
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_PropertyIsBetween.xml");
+        JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
+    }
+
 
 }
