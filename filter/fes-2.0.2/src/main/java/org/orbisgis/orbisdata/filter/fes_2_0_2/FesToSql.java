@@ -127,7 +127,7 @@ public class FesToSql {
 //------------------------------------------------Operator Comparison-------------------------------------------------
 
     /**
-     * this method separate the comparison object between
+     * Method separate the comparison object for each comparison operator
      * @param comparisonElement
      * @return
      */
@@ -135,16 +135,16 @@ public class FesToSql {
         StringBuilder returnSQL = new StringBuilder();
 
 
-        if (comparisonElement.getName().getLocalPart() == "PropertyIsBetween") {
+        if (comparisonElement.getName().getLocalPart().equals("PropertyIsBetween")) {
             returnSQL.append(operatorPropertyIsBetween(comparisonElement));
 
-        } else if (comparisonElement.getName().getLocalPart() == "PropertyIsLike") {
+        } else if (comparisonElement.getName().getLocalPart().equals("PropertyIsLike")) {
             returnSQL.append(operatorPropertyIsLike(comparisonElement));
 
-        } else if (comparisonElement.getName().getLocalPart() == "PropertyIsNil") {
+        } else if (comparisonElement.getName().getLocalPart().equals("PropertyIsNil")) {
             returnSQL.append(operatorPropertyIsNil(comparisonElement));
 
-        } else if (comparisonElement.getName().getLocalPart() == "PropertyIsNull") {
+        } else if (comparisonElement.getName().getLocalPart().equals("PropertyIsNull")) {
             returnSQL.append(operatorPropertyIsNull(comparisonElement));
 
         } else {
@@ -154,7 +154,7 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type PropertyIsBetween
      * @param comparisonElement
      * @return
      */
@@ -179,7 +179,7 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type PropertyIsLike
      * @param comparisonElement
      * @return
      */
@@ -201,7 +201,7 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type PropertyIsNil
      * @param comparisonElement
      * @return
      */
@@ -217,7 +217,7 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type PropertyIsNull
      * @param comparisonElement
      * @return
      */
@@ -233,7 +233,7 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type BinaryComparison
      * @param comparisonElement
      * @return
      */
@@ -280,7 +280,7 @@ public class FesToSql {
 //-----------------------------------------------Operator Spatial-------------------------------------------------------
 
     /**
-     *
+     * Method separate the Spatial object for each Spatial Operator
      * @param spatialElement
      * @return
      */
@@ -289,9 +289,9 @@ public class FesToSql {
 
 
         if (spatialElement.getName().getLocalPart().equals("BBOX")) {
-            BBOXType bboxType = (BBOXType) spatialElement.getValue();
-            if (bboxType.isSetExpressionOrAny()) {
-
+            BBOXType bbox = (BBOXType) spatialElement.getValue();
+            if (bbox.isSetExpressionOrAny()) {
+                returnSQL.append(operatorBBOX(bbox));
             }
         } else if (spatialElement.getName().getLocalPart().equals("Beyond") || spatialElement.getName().getLocalPart().equals("DWithin")) {
             DistanceBufferType distanceBuffer = (DistanceBufferType) spatialElement.getValue();
@@ -308,24 +308,32 @@ public class FesToSql {
     }
 
 
-    /*
-     *
+    /**
+     * Method create the String returned for the object type BBOX. This operator can be transform in a two function,
+     * a not and a Disjoint.
      * @param bboxType
      * @return
-     *
+     */
     private static StringBuilder operatorBBOX( BBOXType bboxType) {
         StringBuilder returnSQL = new StringBuilder();
-            List<Object> list = bboxType.getExpressionOrAny();
-            for (Object obj : list) {
-                if (obj instanceof JAXBElement) {
-                    //element in SQL not find
-                }
+        returnSQL.append("!( ST_Disjoint( ");
+        List<Object> list = bboxType.getExpressionOrAny();
+        for (Object obj : list) {
+            if (obj instanceof JAXBElement) {
+                returnSQL.append(getExpressionRecursive((JAXBElement) obj));
             }
+            else{
+                returnSQL.append(obj.toString());
+            }
+            if(list.get((list.size()-1))!=obj)returnSQL.append(", ");
+        }
+        returnSQL.append(")");
         return returnSQL;
-    }*/
+    }
+
 
     /**
-     *
+     * Method create the String returned for the object of type DWithin
      * @param distanceBuffer
      * @return
      */
@@ -346,10 +354,10 @@ public class FesToSql {
     }
 
     /**
-     *
+     * Method create the String returned for the object of type BinarySpatialOp
      * @param binarySpatialOp
      * @param spatialElement
-     * @return
+     * @return a StringBuilder
      */
     private static StringBuilder operatorBinarySpatial(BinarySpatialOpType binarySpatialOp,JAXBElement<SpatialOpsType> spatialElement ) {
         StringBuilder returnSQL = new StringBuilder();
@@ -392,9 +400,9 @@ public class FesToSql {
             }
             JAXBElement element = ((JAXBElement) obj);
             returnSQL.append(getExpressionRecursive(element));
-            if(list.get((list.size()-1))==obj)returnSQL.append(")");// if end of list
-            else returnSQL.append(", ");
+            if(list.get((list.size()-1))!=obj)returnSQL.append(", ");// if end of list
         }
+        returnSQL.append(")");
         return returnSQL;
     }
 
@@ -402,7 +410,7 @@ public class FesToSql {
 //------------------------------------------------Operator Logical------------------------------------------------------
 
     /**
-     *
+     * Method separate the Logical object for each Spatial Logical
      * @param logicalElement
      * @return
      */
@@ -419,6 +427,11 @@ public class FesToSql {
         return  returnSQL;
     }
 
+    /**
+     * Method create the String returned for the object of type UnaryLogic
+     * @param logicalElement
+     * @return
+     */
     private static StringBuilder operatorNot(JAXBElement<LogicOpsType> logicalElement){
         StringBuilder returnSQL = new StringBuilder();
         UnaryLogicOpType unaryLogic = (UnaryLogicOpType) logicalElement.getValue();
@@ -433,7 +446,7 @@ public class FesToSql {
 
         } else if (unaryLogic.isSetLogicOps()) {
             JAXBElement<LogicOpsType> logicalElementRecursif = (JAXBElement<LogicOpsType>) unaryLogic.getLogicOps();
-            returnSQL.append(operatorLogical(logicalElementRecursif));
+            returnSQL.append(operatorLogical(logicalElementRecursif));//
 
         } else if (unaryLogic.isSetFunction()) {
             ObjectFactory factory = new ObjectFactory();
@@ -455,6 +468,12 @@ public class FesToSql {
         return returnSQL ;
     }
 
+    /**
+     * Method create the String returned for the object of type BinaryLogic
+     * @param binaryLogicOpType
+     * @param ops
+     * @return
+     */
     private static StringBuilder operatorOrAnd(BinaryLogicOpType binaryLogicOpType,String ops) {
         StringBuilder returnSQL = new StringBuilder();
 
@@ -462,7 +481,9 @@ public class FesToSql {
             returnSQL.append("( ");
             List<JAXBElement<?>> list = binaryLogicOpType.getComparisonOpsOrSpatialOpsOrTemporalOps();
             for (JAXBElement element : list) {
+
                 if(element==list.get((list.size()-1)))returnSQL.append(ops+" ");
+
                 if(element.getValue() instanceof ComparisonOpsType){
                     returnSQL.append(operatorComparison(element));
 
@@ -494,7 +515,7 @@ public class FesToSql {
 //-----------------------------------------------Operator Function------------------------------------------------------
 
     /**
-     *
+     * Method create the String returned for the object of type Function
      * @param functionElement
      * @return
      */
@@ -509,13 +530,14 @@ public class FesToSql {
 //-----------------------------------------------Operator Id------------------------------------------------------------
 
     /**
-     *
-     * @param resourceId
+     * Method create the String returned for the object of type Function
+     * @param resourceIdElement
      * @return
      */
-    private static StringBuilder operatorId(JAXBElement<ResourceIdType> resourceId){
+    private static StringBuilder operatorId(JAXBElement<ResourceIdType> resourceIdElement){
         StringBuilder returnSQL = new StringBuilder();
-
+        ResourceIdType resourceId = resourceIdElement.getValue();
+        //not Implement yet
         return  returnSQL;
     }
 
@@ -523,13 +545,13 @@ public class FesToSql {
 //-----------------------------------------------Operator Extension------------------------------------------------------
 
     /**
-     *
+     * Method create the String returned for the object of type Extension
      * @param extensionOperator
      * @return
      */
     private static StringBuilder operatorExtension(ExtensionOpsType extensionOperator){
         StringBuilder returnSQL = new StringBuilder();
-
+        //not Implement yet
         return  returnSQL;
     }
 
@@ -537,14 +559,14 @@ public class FesToSql {
 //----------------------------------------------------Expression--------------------------------------------------------
 
     /**
-     *
+     * Method create the String returned for the Expression
      * @param element
      * @return
      */
     private static StringBuilder getExpressionRecursive(JAXBElement element){
         StringBuilder stringBuilder = new StringBuilder();
 
-        if(element.getName().getLocalPart()=="Function"){
+        if(element.getName().getLocalPart().equals("Function")){
             FunctionType functionType = (FunctionType) element.getValue();
             stringBuilder.append(functionType.getName()+"( ");
 
@@ -556,10 +578,10 @@ public class FesToSql {
                 }
             }
 
-        }else if(element.getName().getLocalPart()=="ValueReference"){
+        }else if(element.getName().getLocalPart().equals("ValueReference")) {
             stringBuilder.append(element.getValue().toString()+" ");
 
-        }else if(element.getName().getLocalPart()=="Literal"){
+        }else if(element.getName().getLocalPart().equals("Literal")) {
             element = (JAXBElement<LiteralType>) element;
             LiteralType literalType = (LiteralType) element.getValue();
             List list = literalType.getContent();

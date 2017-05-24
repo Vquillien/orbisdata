@@ -159,6 +159,13 @@ public class TestFes2_0_2 {
 
         Assert.assertEquals(XmlToSql(element).toString(), "ST_DWithin( London , Paris , 344.0 )");
 
+
+        //Branch BBOX
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_BBOX.xml");
+        element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "!( ST_Disjoint( element , 100 , 200 )");
+
     }
 
     /**
@@ -187,20 +194,20 @@ public class TestFes2_0_2 {
         //Branch AndOr
         xml = TestFes2_0_2.class.getResourceAsStream("filter_OrAnd.xml");
         JAXBElement element = (JAXBElement) unmarshaller.unmarshal(xml);
-        System.out.println(XmlToSql(element).toString());
         Assert.assertEquals(XmlToSql(element).toString(), "( ( depth > 80 And depth < 200 ) Or depth BETWEEN 100 200 ) ");
 
 
-        //Branch AndOr
+        //Branch Not
         xml = TestFes2_0_2.class.getResourceAsStream("filter_Not.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
         Assert.assertEquals(XmlToSql(element).toString(), "!( ( depth > 80 And !( depth < 200 ) ) ) ");
+
+        //Branch Not
+        xml = TestFes2_0_2.class.getResourceAsStream("filter_NotRecur.xml");
+        element = (JAXBElement) unmarshaller.unmarshal(xml);
+
+        Assert.assertEquals(XmlToSql(element).toString(), "!( !( depth < 200 ) ) ");
     }
-
-
-
-
-
 
 }
