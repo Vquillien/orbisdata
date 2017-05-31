@@ -35,13 +35,11 @@
  */
 package org.orbisgis.orbisdata.filter.fes_2_0_2;
 
-import net.opengis.fes._2_0_2.FilterType;
-import net.opengis.fes._2_0_2.ObjectFactory;
-import net.opengis.fes._2_0_2.SortByType;
-import net.opengis.fes._2_0_2.SortPropertyType;
+import net.opengis.fes._2_0_2.*;
 
 import javax.xml.bind.JAXBElement;
-import java.util.List;
+import java.util.ArrayList;
+
 
 /**
  * This class change a String of SQL parameter in an object JaxB.
@@ -63,26 +61,30 @@ public class FesToXml {
         if (objectFromFilterSQL != null) {
             if (objectFromFilterSQL instanceof String) {
                 String sqlObject = new String((String) objectFromFilterSQL);
-                sqlObject.toUpperCase();//All the String in uppercase
 
-                if (sqlObject.indexOf(" ") != -1) {
-                    String command = sqlObject.substring(0, sqlObject.indexOf(" "));
-                    String parameter = sqlObject.substring(sqlObject.indexOf(" "));
-                    int size = (parameter.split(",")).length;
-                    switch (command) {
-                        case "WHERE":
-                            FilterType filter = createFilter();
-                            filterElement = factory.createFilter(filter);
-                            returnXml = filterElement;
-                            break;
-                        case "ORDER BY":
-                            SortByType sortBy = factory.createSortByType();
-                            for(int i = 0; i<size;i++)
-                            sortBy.getSortProperty().add();
-                            sortByElement = factory.createSortBy(sortBy);
-                            returnXml = sortByElement;
-                            break;
+                if(sqlObject.startsWith("WHERE")) {
+                    String parameter = sqlObject.substring(5).trim();
+                    FilterType filter = createFilter();
+                    filterElement = factory.createFilter(filter);
+                    returnXml = filterElement;
+
+                }else{
+                    String parameter = sqlObject.substring(8).trim();
+                    String[] parameterSortProperty = parameter.split(", ");
+
+                    SortByType sortBy = factory.createSortByType();
+                    for(int i = 0; i<parameterSortProperty.length; i++){
+                        SortPropertyType sortProperty = factory.createSortPropertyType();
+                        String[] elements = parameterSortProperty[i].split(" ");
+                        sortProperty.setValueReference(elements[0].trim());
+                        if(elements.length>1){
+                            sortProperty.setSortOrder(SortOrderType.fromValue(elements[1].trim()));
+                        }
+                        sortBy.getSortProperty().add(sortProperty);
                     }
+
+                    sortByElement = factory.createSortBy(sortBy);
+                    returnXml = sortByElement;
                 }
             }
         }
