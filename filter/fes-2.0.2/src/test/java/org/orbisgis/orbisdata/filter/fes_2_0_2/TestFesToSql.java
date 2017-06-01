@@ -124,7 +124,7 @@ public class TestFesToSql {
         xml = TestFesToSql.class.getResourceAsStream("filter_PropertyIsNil.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "value IS NIL");
+        Assert.assertEquals(XmlToSql(element).toString(), "value IS NULL");
 
         //Branch Null
         xml = TestFesToSql.class.getResourceAsStream("filter_PropertyIsNull.xml");

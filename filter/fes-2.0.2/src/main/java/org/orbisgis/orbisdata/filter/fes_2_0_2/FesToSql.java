@@ -211,7 +211,7 @@ public class FesToSql {
 
         if (propertyIsNilType.isSetExpression()) {
             returnSQL.append(getExpressionRecursive(propertyIsNilType.getExpression()));
-            returnSQL.append("IS NIL");
+            returnSQL.append("IS NULL");
         }
         return  returnSQL;
     }

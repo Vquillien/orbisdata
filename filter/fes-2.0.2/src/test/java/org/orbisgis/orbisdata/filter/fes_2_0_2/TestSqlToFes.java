@@ -36,7 +36,6 @@
 package org.orbisgis.orbisdata.filter.fes_2_0_2;
 
 
-import net.opengis.fes._2_0_2.ObjectFactory;
 import net.opengis.fes._2_0_2.SortByType;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,19 +43,14 @@ import org.junit.Test;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import java.io.InputStream;
 
-import static org.orbisgis.orbisdata.filter.fes_2_0_2.FesToSql.XmlToSql;
-import static org.orbisgis.orbisdata.filter.fes_2_0_2.FesToXml.sqlToXml;
-import static org.orbisgis.orbisdata.filter.fes_2_0_2.JaxbContainer.JAXBCONTEXT;
+import static org.orbisgis.orbisdata.filter.fes_2_0_2.SqlToFes.sqlToXml;
 
 /**
  * Test of the classFesToSql
  * @author Vincent QUILLIEN
  */
-public class TestFesToXml {
+public class TestSqlToFes {
 
 
 
@@ -79,17 +73,46 @@ public class TestFesToXml {
     @Test
     public void testXmlToSqlSortBy() throws JAXBException {
         //Branch SortBy
-        String request = "ORDER BY column1 ASC, column2";
+        String request = "ORDER BY column1 ASC, column2 DESC";
         Object sortByElement = sqlToXml(request);
         SortByType sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
-
 
         Assert.assertTrue(sortByElement instanceof JAXBElement);
         Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getSortOrder().value(),"ASC");
         Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
-       // Assert.assertEquals(sortBy.getSortProperty().get(1).getSortOrder().value(),"DESC");
+        Assert.assertEquals(sortBy.getSortProperty().get(1).getSortOrder().value(),"DESC");
+
+        request = "ORDER BY column1 ASC, column2";
+        sortByElement = sqlToXml(request);
+        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+
+        Assert.assertTrue(sortByElement instanceof JAXBElement);
+        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
+        Assert.assertEquals(sortBy.getSortProperty().get(0).getSortOrder().value(),"ASC");
+        Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
+
+        request = "ORDER BY column1, column2";
+        sortByElement = sqlToXml(request);
+        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+
+        Assert.assertTrue(sortByElement instanceof JAXBElement);
+        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
+        Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
+
+        request = "ORDER BY find(element1,element2)";
+        sortByElement = sqlToXml(request);
+        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+
+        Assert.assertTrue(sortByElement instanceof JAXBElement);
+        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"find(element1,element2)");
+
+
+
     }
 
 
@@ -102,7 +125,8 @@ public class TestFesToXml {
     public void testXmlToSqlFilterComparison() throws JAXBException {
 
         //Branch Between
-
+        String request = "WHERE DEPTH = 100";
+        sqlToXml(request);
         //Branch Like
 
         //Branch Nil
