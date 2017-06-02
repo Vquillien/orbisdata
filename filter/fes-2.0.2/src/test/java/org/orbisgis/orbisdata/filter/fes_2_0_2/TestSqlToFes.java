@@ -44,6 +44,8 @@ import org.junit.Test;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
+import java.util.HashMap;
+
 import static org.orbisgis.orbisdata.filter.fes_2_0_2.SqlToFes.sqlToXml;
 
 /**
@@ -73,42 +75,46 @@ public class TestSqlToFes {
     @Test
     public void testXmlToSqlSortBy() throws JAXBException {
         //Branch SortBy
-        String request = "ORDER BY column1 ASC, column2 DESC";
-        Object sortByElement = sqlToXml(request);
-        SortByType sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+        String request = "SELECT Column1 FROM table1 ORDER BY column1 ASC, column2 DESC";
+        HashMap<String,JAXBElement> list = sqlToXml(request);
+        JAXBElement<SortByType> sortByElement = list.get("ORDER BY");
+        SortByType sortBy = sortByElement.getValue();
 
         Assert.assertTrue(sortByElement instanceof JAXBElement);
-        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortByElement.getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getSortOrder().value(),"ASC");
         Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
         Assert.assertEquals(sortBy.getSortProperty().get(1).getSortOrder().value(),"DESC");
 
-        request = "ORDER BY column1 ASC, column2";
-        sortByElement = sqlToXml(request);
-        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+        request = "SELECT Column1 FROM table1 ORDER BY column1 ASC, column2";
+        list = sqlToXml(request);
+        sortByElement = list.get("ORDER BY");
+        sortBy = sortByElement.getValue();
 
         Assert.assertTrue(sortByElement instanceof JAXBElement);
-        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortByElement.getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getSortOrder().value(),"ASC");
         Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
 
-        request = "ORDER BY column1, column2";
-        sortByElement = sqlToXml(request);
-        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+        request = "SELECT Column1 FROM table1 ORDER BY column1, column2";
+        list = sqlToXml(request);
+        sortByElement = list.get("ORDER BY");
+        sortBy = sortByElement.getValue();
 
         Assert.assertTrue(sortByElement instanceof JAXBElement);
-        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortByElement.getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"column1");
         Assert.assertEquals(sortBy.getSortProperty().get(1).getValueReference(),"column2");
 
-        request = "ORDER BY find(element1,element2)";
-        sortByElement = sqlToXml(request);
-        sortBy = (SortByType) ((JAXBElement) sortByElement).getValue();
+        request = "SELECT Column1 FROM table1 ORDER BY find(element1,element2)";
+        list = sqlToXml(request);
+        sortByElement = list.get("ORDER BY");
+        sortBy = sortByElement.getValue();
 
         Assert.assertTrue(sortByElement instanceof JAXBElement);
-        Assert.assertEquals(((JAXBElement) sortByElement).getName().getLocalPart(),"SortBy");
+        Assert.assertEquals(sortByElement.getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"find(element1,element2)");
 
 
@@ -125,7 +131,7 @@ public class TestSqlToFes {
     public void testXmlToSqlFilterComparison() throws JAXBException {
 
         //Branch Between
-        String request = "WHERE DEPTH = 100";
+        String request = "SELECT Column1 FROM table1 WHERE DEPTH = 100";
         sqlToXml(request);
         //Branch Like
 
