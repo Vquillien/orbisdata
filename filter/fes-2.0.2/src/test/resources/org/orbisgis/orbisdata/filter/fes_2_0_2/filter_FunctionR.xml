@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<fes:Filter
+            xmlns:fes="http://www.opengis.net/fes/2.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.opengis.net/fes/2.0 http://schemas.opengis.net/filter/2.0/filterAll.xsd">
+    <fes:Function name="a_function">
+        <fes:Function name="_in_a_function">
+            <fes:ValueReference>a function in a function</fes:ValueReference>
+        </fes:Function>
+    </fes:Function>
+</fes:Filter>
+
