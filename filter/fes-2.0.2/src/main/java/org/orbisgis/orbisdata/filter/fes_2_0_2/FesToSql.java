@@ -293,7 +293,7 @@ public class FesToSql {
             if (bbox.isSetExpressionOrAny()) {
                 returnSQL.append(operatorBBOX(bbox));
             }
-        } else if (spatialElement.getName().getLocalPart().equals("Beyond") || spatialElement.getName().getLocalPart().equals("DWithin")) {
+        } else if (spatialElement.getName().getLocalPart().equals("DWithin")) {
             DistanceBufferType distanceBuffer = (DistanceBufferType) spatialElement.getValue();
             if(distanceBuffer.isSetExpressionOrAny()){
                 returnSQL.append(operatorDWithin(distanceBuffer));
@@ -316,7 +316,7 @@ public class FesToSql {
      */
     private static StringBuilder operatorBBOX( BBOXType bboxType) {
         StringBuilder returnSQL = new StringBuilder();
-        returnSQL.append("!( ST_Disjoint( ");
+        returnSQL.append("NOT ST_Disjoint( ");
         List<Object> list = bboxType.getExpressionOrAny();
         for (Object obj : list) {
             if (obj instanceof JAXBElement) {
