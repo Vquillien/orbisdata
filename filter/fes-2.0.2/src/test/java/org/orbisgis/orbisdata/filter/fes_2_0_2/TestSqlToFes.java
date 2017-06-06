@@ -36,14 +36,13 @@
 package org.orbisgis.orbisdata.filter.fes_2_0_2;
 
 
-import net.opengis.fes._2_0_2.SortByType;
+import net.opengis.fes._2_0_2.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-
 import java.util.HashMap;
 
 import static org.orbisgis.orbisdata.filter.fes_2_0_2.SqlToFes.sqlToXml;
@@ -130,14 +129,63 @@ public class TestSqlToFes {
     @Test
     public void testXmlToSqlFilterComparison() throws JAXBException {
 
-        //Branch Between
+        //Branch PropertyIsEqualTo
         String request = "SELECT Column1 FROM table1 WHERE DEPTH = 100";
-        sqlToXml(request);
-        //Branch Like
+        HashMap<String,JAXBElement> list = sqlToXml(request);
+        JAXBElement<FilterType> filterElement = list.get("WHERE");
+        FilterType filter = filterElement.getValue();
+        BinaryComparisonOpType comparison = (BinaryComparisonOpType) filter.getComparisonOps().getValue();
+        LiteralType literal = (LiteralType) comparison.getExpression().get(1).getValue();
 
-        //Branch Nil
 
-        //Branch Null
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsEqualTo");
+        Assert.assertEquals(comparison.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
+
+        //Branch PropertyIsBetween
+        request = "SELECT Column1 FROM table1 WHERE DEPTH BETWEEN 100 200";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        PropertyIsBetweenType between = (PropertyIsBetweenType) filter.getComparisonOps().getValue();
+        LiteralType upper = (LiteralType) between.getUpperBoundary().getExpression().getValue();
+        LiteralType lower = (LiteralType) between.getLowerBoundary().getExpression().getValue();
+
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsBetween");
+        Assert.assertEquals(between.getExpression().getValue().toString(),"DEPTH");
+        Assert.assertEquals(lower.getContent().get(0).toString(),"100");
+        Assert.assertEquals(upper.getContent().get(0).toString(),"200");
+
+        //Branch PropertyIsNull
+        request = "SELECT Column1 FROM table1 WHERE DEPTH IS NULL";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        PropertyIsNullType nullType = (PropertyIsNullType) filter.getComparisonOps().getValue();
+
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsNull");
+        Assert.assertEquals(nullType.getExpression().getValue().toString(),"DEPTH");
+
+        //Branch PropertyIsLike
+        request = "SELECT Column1 FROM table1 WHERE name LIKE 'smi' ";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        PropertyIsLikeType propertyIsLike = (PropertyIsLikeType) filter.getComparisonOps().getValue();
+
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"propertyIsLike");
+        Assert.assertEquals(propertyIsLike.getExpression().get(0).toString(),"name");
 
         //Branch PropertyIsGreaterThan
 

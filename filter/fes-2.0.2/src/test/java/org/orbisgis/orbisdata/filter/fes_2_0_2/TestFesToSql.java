@@ -164,7 +164,7 @@ public class TestFesToSql {
         xml = TestFesToSql.class.getResourceAsStream("filter_BBOX.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "NOT( ST_Disjoint( element , 100 , 200 )");
+        Assert.assertEquals(XmlToSql(element).toString(), "NOT ST_Disjoint( element , 100 , 200 )");
 
     }
 

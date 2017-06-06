@@ -36,10 +36,8 @@
 package org.orbisgis.orbisdata.filter.fes_2_0_2;
 
 import net.opengis.fes._2_0_2.*;
-import net.opengis.wfs._2_1.PropertyType;
 
 import javax.xml.bind.JAXBElement;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -141,7 +139,7 @@ public class SqlToFes {
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = null;
 
-        Pattern filterComparison = Pattern.compile("([\\w,( )]+)(LIKE|BETWEEN|IS NULL|<|>|>=|<=|!=|=)([\\w,( )%]+)");
+        Pattern filterComparison = Pattern.compile("([\\w,( )]+)(LIKE|BETWEEN|IS NULL|<|>|>=|<=|!=|=)([\\w,( )\'%]*)");
 
         Pattern filterSpatial = Pattern.compile("(!\\( ST_Disjoint\\(|ST_DWithin\\(|ST_Equals\\(|ST_Disjoint\\(|" +
                 "ST_Touches\\(|ST_Overlaps\\(|ST_Crosses\\(|ST_Intersects\\(|ST_Contains\\(|ST_Within\\()([\\w,( )]+)\\)");
@@ -153,13 +151,13 @@ public class SqlToFes {
         Matcher matcherLogical = filterLogical.matcher(requestWhere);
 
         if(matcherComparison.matches()) {
-            createFilterComparison(matcherComparison);
+            filterElement = createFilterComparison(matcherComparison);
 
         }else if(matcherSpatial.matches()){
-            createFilterSpatial(matcherSpatial);
+            filterElement = createFilterSpatial(matcherSpatial);
 
         }else if(matcherLogical.matches()){
-            createFilterLogical(matcherLogical);
+            filterElement = createFilterLogical(matcherLogical);
 
         }else{
             //LOGGER
@@ -176,7 +174,7 @@ public class SqlToFes {
 
     private static FilterType  createFilterComparison(Matcher matcherComparison){
         ObjectFactory factory = new ObjectFactory();
-        FilterType filterElement = null;
+        FilterType filterElement = factory.createFilterType();
 
         switch (matcherComparison.group(2)){
             case"LIKE":
@@ -194,9 +192,9 @@ public class SqlToFes {
                 propertyIsBetween.setExpression(getExpressionObject(matcherComparison.group(1).trim(),false));
                 UpperBoundaryType upperBoundary = factory.createUpperBoundaryType();
                 LowerBoundaryType lowerBoundary = factory.createLowerBoundaryType();
-                String[] listBoundary = matcherComparison.group(3).split(" ");
-                upperBoundary.setExpression(getExpressionObject(listBoundary[0].trim(),true));
-                lowerBoundary.setExpression(getExpressionObject(listBoundary[1].trim(),true));
+                String[] listBoundary = matcherComparison.group(3).trim().split(" ");
+                lowerBoundary.setExpression(getExpressionObject(listBoundary[0].trim(),true));
+                upperBoundary.setExpression(getExpressionObject(listBoundary[1].trim(),true));
                 propertyIsBetween.setLowerBoundary(lowerBoundary);
                 propertyIsBetween.setUpperBoundary(upperBoundary);
                 JAXBElement<PropertyIsBetweenType> propertyIsBetweenElement = factory.createPropertyIsBetween(propertyIsBetween);
@@ -246,10 +244,11 @@ public class SqlToFes {
                 propertyIsEqualTo.getExpression().add(
                         getExpressionObject(matcherComparison.group(3).trim(), true));
 
-                JAXBElement<BinaryComparisonOpType> propertyIsEqualToToElement =
-                        factory.createPropertyIsEqualTo(propertyIsEqualTo);
+                JAXBElement<BinaryComparisonOpType> propertyIsEqualToElement = factory.createPropertyIsEqualTo(propertyIsEqualTo);
 
-                filterElement.setComparisonOps(propertyIsEqualToToElement);
+
+                filterElement.setComparisonOps(propertyIsEqualToElement);
+
                 break;
             case"<=":
                 BinaryComparisonOpType propertyIsLessThanOrEqualTo = factory.createBinaryComparisonOpType();
@@ -270,7 +269,7 @@ public class SqlToFes {
 
 
 //-----------------------------------------------Operator Spatial-------------------------------------------------------
-    private static void createFilterSpatial(Matcher matcherSpatial) {
+    private static FilterType createFilterSpatial(Matcher matcherSpatial) {
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = null;
 
@@ -296,9 +295,13 @@ public class SqlToFes {
             case "ST_Within(":
                 break;
         }
+        return filterElement;
     }
 //------------------------------------------------Operator Logical------------------------------------------------------
-    private static void createFilterLogical(Matcher matcherSpatial) {
+    private static FilterType createFilterLogical(Matcher matcherSpatial) {
+        ObjectFactory factory = new ObjectFactory();
+        FilterType filterElement = null;
+
         switch (matcherSpatial.group(1)) {
             case "NOT":
                 break;
@@ -307,6 +310,7 @@ public class SqlToFes {
             case "OR":
                 break;
         }
+        return filterElement;
     }
 //----------------------------------------------------Expression--------------------------------------------------------
 
@@ -321,7 +325,7 @@ public class SqlToFes {
         JAXBElement jaxBElement = null;
 
         Pattern FilterDigit= Pattern.compile("[\\d,]*");
-        Pattern FilterFunctionOrValueRef = Pattern.compile("([\\w ]*\\([\\w( )']*\\))|([\\w ]*)");
+        Pattern FilterFunctionOrValueRef = Pattern.compile("([\\w ]*\\([\\w( )']*\\))|([\\w' ]*)");
 
         Matcher matcherFunctionOrValueRef = FilterFunctionOrValueRef.matcher(element);
         Matcher matcherDigit = FilterDigit.matcher(element);
@@ -333,18 +337,20 @@ public class SqlToFes {
             JAXBElement<LiteralType> literalElement = factory.createLiteral(literal);
             jaxBElement = literalElement;
 
-        }else if(matcherFunctionOrValueRef.matches() && !valueLiteral){//Function Type
+        }else if(matcherFunctionOrValueRef.matches()){
 
+            //Function Type
             if(matcherFunctionOrValueRef.group(1)!=null) {
                 JAXBElement expressionElement = getExpressionObject(matcherFunctionOrValueRef.group(1),false);
                 FunctionType function = factory.createFunctionType();
                 function.getExpression().add(expressionElement);
                 JAXBElement<FunctionType> functionElement = factory.createFunction(function);
                 jaxBElement = functionElement;
-            }
-        }else{//ValueRef Reference
+
+            }else {//ValueRef Reference
                 JAXBElement<String> valueRefElement = factory.createValueReference(matcherFunctionOrValueRef.group(2));
                 jaxBElement = valueRefElement;
+            }
         }
         return jaxBElement;
     }
