@@ -261,7 +261,8 @@ public class FesToSql {
                             returnSQL.append("= ");
                             break;
                         case "PropertyIsNotEqualTo":
-                            returnSQL.append("!= ");
+                            returnSQL.insert(0,"NOT ");
+                            returnSQL.append("= ");
                             break;
                         case "PropertyIsLessThanOrEqualTo":
                             returnSQL.append("<= ");
@@ -435,7 +436,7 @@ public class FesToSql {
     private static StringBuilder operatorNot(JAXBElement<LogicOpsType> logicalElement){
         StringBuilder returnSQL = new StringBuilder();
         UnaryLogicOpType unaryLogic = (UnaryLogicOpType) logicalElement.getValue();
-        returnSQL.append("!( ");
+        returnSQL.append("NOT ( ");
         if (unaryLogic.isSetComparisonOps()) {
             JAXBElement<ComparisonOpsType> comparisonElement = (JAXBElement<ComparisonOpsType>) unaryLogic.getComparisonOps();
             returnSQL.append(operatorComparison(comparisonElement));

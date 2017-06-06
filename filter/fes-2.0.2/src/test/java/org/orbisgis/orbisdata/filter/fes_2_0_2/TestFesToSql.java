@@ -145,7 +145,7 @@ public class TestFesToSql {
      * @throws JAXBException
      */
     @Test
-    public void testXmlToSalFilterSpatial() throws JAXBException {
+    public void testXmlToSqlFilterSpatial() throws JAXBException {
 
         //Branch Equals
         xml = TestFesToSql.class.getResourceAsStream("filter_Equals.xml");
@@ -164,7 +164,7 @@ public class TestFesToSql {
         xml = TestFesToSql.class.getResourceAsStream("filter_BBOX.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "!( ST_Disjoint( element , 100 , 200 )");
+        Assert.assertEquals(XmlToSql(element).toString(), "NOT( ST_Disjoint( element , 100 , 200 )");
 
     }
 
@@ -174,7 +174,7 @@ public class TestFesToSql {
      * @throws JAXBException
      */
     @Test
-    public void testXmlToSalFilterFunction() throws JAXBException {
+    public void testXmlToSqlFilterFunction() throws JAXBException {
 
         //Branch Equals
         xml = TestFesToSql.class.getResourceAsStream("filter_Function.xml");
@@ -189,7 +189,7 @@ public class TestFesToSql {
      * @throws JAXBException
      */
     @Test
-    public void testXmlToSalFilterLogical() throws JAXBException {
+    public void testXmlToSqlFilterLogical() throws JAXBException {
 
         //Branch AndOr
         xml = TestFesToSql.class.getResourceAsStream("filter_OrAnd.xml");
@@ -201,13 +201,13 @@ public class TestFesToSql {
         xml = TestFesToSql.class.getResourceAsStream("filter_Not.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "!( ( depth > 80 And !( depth < 200 ) ) ) ");
+        Assert.assertEquals(XmlToSql(element).toString(), "NOT ( ( depth > 80 And NOT ( depth < 200 ) ) ) ");
 
         //Branch Not
         xml = TestFesToSql.class.getResourceAsStream("filter_NotRecur.xml");
         element = (JAXBElement) unmarshaller.unmarshal(xml);
 
-        Assert.assertEquals(XmlToSql(element).toString(), "!( !( depth < 200 ) ) ");
+        Assert.assertEquals(XmlToSql(element).toString(), "NOT ( NOT ( depth < 200 ) ) ");
     }
 
 }
