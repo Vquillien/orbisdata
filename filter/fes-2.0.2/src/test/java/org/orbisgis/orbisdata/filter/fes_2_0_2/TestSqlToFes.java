@@ -53,26 +53,11 @@ import static org.orbisgis.orbisdata.filter.fes_2_0_2.SqlToFes.sqlToXml;
  */
 public class TestSqlToFes {
 
-
-
-    /**
-     * Initialised the attributes from the class
-     *
-     * @throws JAXBException
-     */
-    @Before
-    public void initialize() throws JAXBException {
-
-    }
-
-
     /**
      * Test of the static method for SortBy
-     *
-     * @throws JAXBException
      */
     @Test
-    public void testXmlToSqlSortBy() throws JAXBException {
+    public void testXmlToSqlSortBy() {
         //Branch SortBy
         String request = "SELECT Column1 FROM table1 ORDER BY column1 ASC, column2 DESC";
         HashMap<String,JAXBElement> list = sqlToXml(request);
@@ -116,18 +101,14 @@ public class TestSqlToFes {
         Assert.assertEquals(sortByElement.getName().getLocalPart(),"SortBy");
         Assert.assertEquals(sortBy.getSortProperty().get(0).getValueReference(),"find(element1,element2)");
 
-
-
     }
 
 
     /**
      * Test of the static method for the comparison operator
-     *
-     * @throws JAXBException
      */
     @Test
-    public void testXmlToSqlFilterComparison() throws JAXBException {
+    public void testXmlToSqlFilterComparison() {
 
         //Branch PropertyIsEqualTo
         String request = "SELECT Column1 FROM table1 WHERE DEPTH = 100";
@@ -184,10 +165,64 @@ public class TestSqlToFes {
 
         Assert.assertTrue(filterElement instanceof JAXBElement);
         Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
-        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"propertyIsLike");
-        Assert.assertEquals(propertyIsLike.getExpression().get(0).toString(),"name");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsLike");
+        Assert.assertEquals(propertyIsLike.getExpression().get(0).getValue().toString(),"name");
 
         //Branch PropertyIsGreaterThan
+        request = "SELECT Column1 FROM table1 WHERE DEPTH > 100";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        BinaryComparisonOpType propertyIsGreaterThan = (BinaryComparisonOpType) filter.getComparisonOps().getValue();
+        literal = (LiteralType) propertyIsGreaterThan.getExpression().get(1).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsGreaterThan");
+        Assert.assertEquals(propertyIsGreaterThan.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
+
+        //Branch PropertyIsGreaterThanOrEqualTo
+        request = "SELECT Column1 FROM table1 WHERE DEPTH >= 100";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        BinaryComparisonOpType propertyIsGreaterThanOrEqualTo = (BinaryComparisonOpType) filter.getComparisonOps().getValue();
+        literal = (LiteralType) propertyIsGreaterThanOrEqualTo.getExpression().get(1).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsGreaterThanOrEqualTo");
+        Assert.assertEquals(propertyIsGreaterThanOrEqualTo.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
+
+        //Branch PropertyIsLessThan
+        request = "SELECT Column1 FROM table1 WHERE DEPTH < 100";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        BinaryComparisonOpType propertyIsLessThan = (BinaryComparisonOpType) filter.getComparisonOps().getValue();
+        literal = (LiteralType) propertyIsLessThan.getExpression().get(1).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsLessThan");
+        Assert.assertEquals(propertyIsLessThan.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
+
+        //Branch PropertyIsLessThanOrEqualTo
+        request = "SELECT Column1 FROM table1 WHERE DEPTH <= 100";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        BinaryComparisonOpType propertyIsLessThanOrEqualTo = (BinaryComparisonOpType) filter.getComparisonOps().getValue();
+        literal = (LiteralType) propertyIsLessThanOrEqualTo.getExpression().get(1).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getComparisonOps().getName().getLocalPart(),"PropertyIsLessThanOrEqualTo");
+        Assert.assertEquals(propertyIsLessThanOrEqualTo.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
 
     }
 

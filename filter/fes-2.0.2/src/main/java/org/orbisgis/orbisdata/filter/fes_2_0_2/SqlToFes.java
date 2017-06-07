@@ -44,37 +44,35 @@ import java.util.regex.Pattern;
 
 
 /**
- * This class change a String of SQL parameter in an object JaxB.
+ * This class changes a String of SQL parameter in a JaxB object .
  * @Author Vincent QUILLIEN
  */
 public class SqlToFes {
 
     /**
-     * This method take an String object which have the form of a request SQL and return and object jaxB :
-     * FilterType or SortByType.
+     * This method take an String object which has the form of a SQL request and return a list of jaxB object :
+     * FilterType or/and SortByType. There are two keys to get back the jaxB object from the list.
      *
-     * @param objectFromSQL
-     * @return the list of JaxBElement
+     * @param sqlRequest String object which has the from of a sql request.
+     * @return HashMap<String,JAXBElement>
      */
-    public static HashMap<String,JAXBElement> sqlToXml(Object objectFromSQL) {
+    public static HashMap<String,JAXBElement> sqlToXml(String sqlRequest) {
         HashMap<String,JAXBElement> listCommandSql = new HashMap<>();
 
-        if (objectFromSQL != null) {
-            if (objectFromSQL instanceof String) {
-                Pattern FilterSql =
-                        Pattern.compile("(SELECT.*)(FROM.*)(WHERE.*)(ORDER BY.*)|" +
-                                "(SELECT.*)(FROM.*)(WHERE.*)|(SELECT.*)(FROM.*)(ORDER BY.*)|(SELECT.*)(FROM.*)", Pattern.MULTILINE);
-                String sqlObject = new String((String) objectFromSQL);
-                Matcher m = FilterSql.matcher(sqlObject);
-                if (m.matches()) {
-                    for(int i = 1; i<=12;i++){
-                        if(m.group(i)!=null){
-                            if(i==3 | i==7 ){
-                                listCommandSql.put("WHERE",separatorWhereOrderBy(m.group(i)));
-                            }
-                            if(i==4 | i==10 ){
-                                listCommandSql.put("ORDER BY",separatorWhereOrderBy(m.group(i)));
-                            }
+        if (sqlRequest != null) {
+            Pattern FilterSql =
+                    Pattern.compile("(SELECT.*)(FROM.*)(WHERE.*)(ORDER BY.*)|(SELECT.*)(FROM.*)(WHERE.*)|" +
+                            "(SELECT.*)(FROM.*)(ORDER BY.*)|(SELECT.*)(FROM.*)", Pattern.MULTILINE);
+            String sqlObject = new String((String) sqlRequest);
+            Matcher m = FilterSql.matcher(sqlObject);
+            if (m.matches()) {
+                for(int i = 1; i<=12;i++){
+                    if(m.group(i)!=null){
+                        if(i==3 | i==7 ){
+                            listCommandSql.put("WHERE",separatorWhereOrderBy(m.group(i)));
+                        }
+                        if(i==4 | i==10 ){
+                            listCommandSql.put("ORDER BY",separatorWhereOrderBy(m.group(i)));
                         }
                     }
                 }
@@ -84,16 +82,15 @@ public class SqlToFes {
     }
 
     /**
-     *
-     * @param lineWhereOrOrderBy
-     * @return
+     * This method separate the command WHERE and ORDER BY and create the jaxB object related.
+     * @param lineWhereOrOrderBy The line of the command WHERE or ORDER BY.
+     * @return JAXBElement
      */
     private static JAXBElement separatorWhereOrderBy(String lineWhereOrOrderBy){
         ObjectFactory factory = new ObjectFactory();
         JAXBElement returnXml = null;
         JAXBElement<FilterType> filterElement = null;
         JAXBElement<SortByType> sortByElement = null;
-        //test the structure of the Object
 
         Pattern FilterWhere = Pattern.compile("(WHERE).*|(ORDER BY)[\\w,( )]*");
         Matcher m = FilterWhere.matcher(lineWhereOrOrderBy);
@@ -131,15 +128,15 @@ public class SqlToFes {
     }
 
     /**
-     *
-     * @param requestWhere
-     * @return
+     * This method build the filter object.
+     * @param requestWhere the parameter of the request, line WHERE.
+     * @return FilterType
      */
     private static FilterType createFilter(String requestWhere) {
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = null;
 
-        Pattern filterComparison = Pattern.compile("([\\w,( )]+)(LIKE|BETWEEN|IS NULL|<|>|>=|<=|!=|=)([\\w,( )\'%]*)");
+        Pattern filterComparison = Pattern.compile("([\\w,( )]+)(LIKE|BETWEEN|IS NULL|<|>|>=|<=|=)([\\w,( )\'%]*)");
 
         Pattern filterSpatial = Pattern.compile("(!\\( ST_Disjoint\\(|ST_DWithin\\(|ST_Equals\\(|ST_Disjoint\\(|" +
                 "ST_Touches\\(|ST_Overlaps\\(|ST_Crosses\\(|ST_Intersects\\(|ST_Contains\\(|ST_Within\\()([\\w,( )]+)\\)");
@@ -171,7 +168,11 @@ public class SqlToFes {
 //------------------------------------------------Operator Comparison-------------------------------------------------
 
 
-
+    /**
+     * This method create the jaxB object of the comparison operator and add it to a Filter Object.
+     * @param matcherComparison An object which performed a match operations on the Pattern filterComparison.
+     * @return FilterType
+     */
     private static FilterType  createFilterComparison(Matcher matcherComparison){
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = factory.createFilterType();
@@ -187,6 +188,7 @@ public class SqlToFes {
                 JAXBElement<PropertyIsLikeType> propertyIsLikeElement = factory.createPropertyIsLike(propertyIsLike);
                 filterElement.setComparisonOps(propertyIsLikeElement);
                 break;
+
             case"BETWEEN":
                 PropertyIsBetweenType propertyIsBetween = factory.createPropertyIsBetweenType();
                 propertyIsBetween.setExpression(getExpressionObject(matcherComparison.group(1).trim(),false));
@@ -200,29 +202,41 @@ public class SqlToFes {
                 JAXBElement<PropertyIsBetweenType> propertyIsBetweenElement = factory.createPropertyIsBetween(propertyIsBetween);
                 filterElement.setComparisonOps(propertyIsBetweenElement);
                 break;
+
             case"IS NULL":
                 PropertyIsNullType propertyIsNull = factory.createPropertyIsNullType();
                 propertyIsNull.setExpression(getExpressionObject(matcherComparison.group(1).trim(), false));
                 JAXBElement<PropertyIsNullType> propertyIsNullElement = factory.createPropertyIsNull(propertyIsNull);
                 filterElement.setComparisonOps(propertyIsNullElement);
                 break;
+
             case"<":
                 BinaryComparisonOpType propertyIsLessThan = factory.createBinaryComparisonOpType();
-                propertyIsLessThan.getExpression().add(getExpressionObject(matcherComparison.group(1).trim(), false));
-                propertyIsLessThan.getExpression().add(getExpressionObject(matcherComparison.group(3).trim(), true));
+                propertyIsLessThan.getExpression().add(
+                        getExpressionObject(matcherComparison.group(1).trim(), false));
+
+                propertyIsLessThan.getExpression().add(
+                        getExpressionObject(matcherComparison.group(3).trim(), true));
+
                 JAXBElement<BinaryComparisonOpType> propertyIsLessThanElement =
                         factory.createPropertyIsLessThan(propertyIsLessThan);
                 filterElement.setComparisonOps(propertyIsLessThanElement);
                 break;
+
             case">":
                 BinaryComparisonOpType propertyIsGreaterThan = factory.createBinaryComparisonOpType();
-                propertyIsGreaterThan.getExpression().add(getExpressionObject(matcherComparison.group(1).trim(), false));
-                propertyIsGreaterThan.getExpression().add(getExpressionObject(matcherComparison.group(3).trim(), true));
+                propertyIsGreaterThan.getExpression().add(
+                        getExpressionObject(matcherComparison.group(1).trim(), false));
+
+                propertyIsGreaterThan.getExpression().add(
+                        getExpressionObject(matcherComparison.group(3).trim(), true));
+
                 JAXBElement<BinaryComparisonOpType> propertyIsGreaterThanElement =
                         factory.createPropertyIsGreaterThan(propertyIsGreaterThan);
 
                 filterElement.setComparisonOps(propertyIsGreaterThanElement);
                 break;
+
             case">=":
                 BinaryComparisonOpType propertyIsGreaterThanOrEqualTo = factory.createBinaryComparisonOpType();
                 propertyIsGreaterThanOrEqualTo.getExpression().add(
@@ -236,6 +250,7 @@ public class SqlToFes {
 
                 filterElement.setComparisonOps(propertyIsGreaterThanOrEqualToElement);
                 break;
+
             case"=":
                 BinaryComparisonOpType propertyIsEqualTo = factory.createBinaryComparisonOpType();
                 propertyIsEqualTo.getExpression().add(
@@ -244,12 +259,13 @@ public class SqlToFes {
                 propertyIsEqualTo.getExpression().add(
                         getExpressionObject(matcherComparison.group(3).trim(), true));
 
-                JAXBElement<BinaryComparisonOpType> propertyIsEqualToElement = factory.createPropertyIsEqualTo(propertyIsEqualTo);
-
+                JAXBElement<BinaryComparisonOpType> propertyIsEqualToElement =
+                        factory.createPropertyIsEqualTo(propertyIsEqualTo);
 
                 filterElement.setComparisonOps(propertyIsEqualToElement);
 
                 break;
+
             case"<=":
                 BinaryComparisonOpType propertyIsLessThanOrEqualTo = factory.createBinaryComparisonOpType();
                 propertyIsLessThanOrEqualTo.getExpression().add(
@@ -269,10 +285,16 @@ public class SqlToFes {
 
 
 //-----------------------------------------------Operator Spatial-------------------------------------------------------
+
+    /**
+     * This method create the jaxB object of the Spatial operator and add it to a Filter Object.
+     * @param matcherSpatial An object which performed a match operations on the Pattern filterSpatial.
+     * @return FilterType
+     */
     private static FilterType createFilterSpatial(Matcher matcherSpatial) {
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = null;
-
+        //not implemented yet
         switch (matcherSpatial.group(1)){
             case "ST_DWithin(":
                 break;
@@ -298,10 +320,16 @@ public class SqlToFes {
         return filterElement;
     }
 //------------------------------------------------Operator Logical------------------------------------------------------
+
+    /**
+     * This method create the jaxB object of the Logical operator and add it to a Filter Object.
+     * @param matcherSpatial An object which performed a match operations on the Pattern filterLogical.
+     * @return FilterType
+     */
     private static FilterType createFilterLogical(Matcher matcherSpatial) {
         ObjectFactory factory = new ObjectFactory();
         FilterType filterElement = null;
-
+        //not implemented yet
         switch (matcherSpatial.group(1)) {
             case "NOT":
                 break;
@@ -315,16 +343,17 @@ public class SqlToFes {
 //----------------------------------------------------Expression--------------------------------------------------------
 
     /**
-     *
-     * @param element
-     * @param valueLiteral
-     * @return
+     * This method create a jaxBElement with the type of one of the Expression : Literal, Function, ValueReference.
+     * For this moment, all the parameter of the function type are under the type ValueReference.
+     * @param element a parameter of an operator.
+     * @param valueLiteral if this parameter is true, in this case, the jaxBElement type will be Literal.
+     * @return JAXBElement
      */
     private static JAXBElement getExpressionObject(String element, Boolean valueLiteral){
         ObjectFactory factory = new ObjectFactory();
         JAXBElement jaxBElement = null;
 
-        Pattern FilterDigit= Pattern.compile("[\\d,]*");
+        Pattern FilterDigit= Pattern.compile("[\\d,.]*");
         Pattern FilterFunctionOrValueRef = Pattern.compile("([\\w ]*\\([\\w( )']*\\))|([\\w' ]*)");
 
         Matcher matcherFunctionOrValueRef = FilterFunctionOrValueRef.matcher(element);
@@ -333,7 +362,11 @@ public class SqlToFes {
         if(matcherDigit.matches() | valueLiteral) {//Literal type
 
             LiteralType literal = factory.createLiteralType();
-            literal.getContent().add(matcherDigit.group());
+            if(matcherDigit.matches()) {
+                literal.getContent().add(matcherDigit.group());
+            }else{
+                literal.getContent().add(element.trim());
+            }
             JAXBElement<LiteralType> literalElement = factory.createLiteral(literal);
             jaxBElement = literalElement;
 
@@ -347,7 +380,7 @@ public class SqlToFes {
                 JAXBElement<FunctionType> functionElement = factory.createFunction(function);
                 jaxBElement = functionElement;
 
-            }else {//ValueRef Reference
+            }else {//Value Reference
                 JAXBElement<String> valueRefElement = factory.createValueReference(matcherFunctionOrValueRef.group(2));
                 jaxBElement = valueRefElement;
             }
