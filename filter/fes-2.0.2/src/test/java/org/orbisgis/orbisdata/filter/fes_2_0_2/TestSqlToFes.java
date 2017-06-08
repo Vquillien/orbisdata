@@ -38,7 +38,6 @@ package org.orbisgis.orbisdata.filter.fes_2_0_2;
 
 import net.opengis.fes._2_0_2.*;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import javax.xml.bind.JAXBElement;
@@ -406,6 +405,23 @@ public class TestSqlToFes {
         Assert.assertEquals(propertyIsLessThan.getExpression().get(0).getValue().toString(),"DEPTH");
         Assert.assertEquals(literal.getContent().get(0).toString(),"100");
 
+        //Branch Not Not
+        request = "SELECT Column1 FROM table1 WHERE NOT NOT DEPTH < 100";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        unaryLogic= (UnaryLogicOpType) filter.getLogicOps().getValue();
+        JAXBElement<UnaryLogicOpType> unaryLogicElement = (JAXBElement<UnaryLogicOpType>) unaryLogic.getLogicOps();
+        propertyIsLessThan = (BinaryComparisonOpType) unaryLogicElement.getValue().getComparisonOps().getValue();
+        literal = (LiteralType) propertyIsLessThan.getExpression().get(1).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"logicOps");
+        Assert.assertEquals(unaryLogicElement.getName().getLocalPart(),"logicOps");
+        Assert.assertEquals(propertyIsLessThan.getExpression().get(0).getValue().toString(),"DEPTH");
+        Assert.assertEquals(literal.getContent().get(0).toString(),"100");
+
 
         //Branch AND
         request = "SELECT Column1 FROM table1 WHERE DEPTH < 100 AND DEPTH > 50";
@@ -422,7 +438,7 @@ public class TestSqlToFes {
 
         Assert.assertTrue(filterElement instanceof JAXBElement);
         Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
-        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"logicOps");
+        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"And");
         Assert.assertEquals(element1.getName().getLocalPart(),"PropertyIsLessThan");
         Assert.assertEquals(element2.getName().getLocalPart(),"PropertyIsGreaterThan");
         Assert.assertEquals(lessThan.getExpression().get(0).getValue().toString(),"DEPTH");
@@ -431,12 +447,11 @@ public class TestSqlToFes {
         Assert.assertEquals(literalGreater.getContent().get(0).toString(),"50");
 
 
-        //Branch AND
+        //Branch OR
         request = "SELECT Column1 FROM table1 WHERE DEPTH < 100 OR DEPTH > 50";
         list = sqlToXml(request);
         filterElement = list.get("WHERE");
         filter = filterElement.getValue();
-        LogicOpsType logicOps = (LogicOpsType) filter.getLogicOps().getValue();
         binaryLogic = (BinaryLogicOpType) filter.getLogicOps().getValue();
         element1 = binaryLogic.getComparisonOpsOrSpatialOpsOrTemporalOps().get(0);
         element2 = binaryLogic.getComparisonOpsOrSpatialOpsOrTemporalOps().get(1);
@@ -447,7 +462,7 @@ public class TestSqlToFes {
 
         Assert.assertTrue(filterElement instanceof JAXBElement);
         Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
-        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"logicOps");
+        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"Or");
         Assert.assertEquals(element1.getName().getLocalPart(),"PropertyIsLessThan");
         Assert.assertEquals(element2.getName().getLocalPart(),"PropertyIsGreaterThan");
         Assert.assertEquals(lessThan.getExpression().get(0).getValue().toString(),"DEPTH");
@@ -455,7 +470,18 @@ public class TestSqlToFes {
         Assert.assertEquals(literalLess.getContent().get(0).toString(),"100");
         Assert.assertEquals(literalGreater.getContent().get(0).toString(),"50");
 
+        //Branch OR AND
+        request = "SELECT Column1 FROM table1 WHERE DEPTH < 100 OR DEPTH > 50 AND DEPTH <= 1000";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        binaryLogic = (BinaryLogicOpType) filter.getLogicOps().getValue();
+        element1 = binaryLogic.getComparisonOpsOrSpatialOpsOrTemporalOps().get(0);
+        element2 = binaryLogic.getComparisonOpsOrSpatialOpsOrTemporalOps().get(1);
 
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getLogicOps().getName().getLocalPart(),"And");
 
     }
 
@@ -468,8 +494,35 @@ public class TestSqlToFes {
     @Test
     public void testXmlToSqFilterFunction() throws JAXBException {
 
-        //Branch Equals
+        //Branch function
+        String request = "SELECT Column1 FROM table1 WHERE function(element1, element2)";
+        HashMap<String,JAXBElement> list = sqlToXml(request);
+        JAXBElement<FilterType> filterElement = list.get("WHERE");
+        FilterType filter = filterElement.getValue();
+        FunctionType function= filter.getFunction();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getFunction().getName(),"function");
+        Assert.assertEquals(function.getExpression().get(0).getValue().toString(),"element1");
+        Assert.assertEquals(function.getExpression().get(1).getValue().toString(),"element2");
+
+        //Branch function
+        request = "SELECT Column1 FROM table1 WHERE function( function(element1, element2)";
+        list = sqlToXml(request);
+        filterElement = list.get("WHERE");
+        filter = filterElement.getValue();
+        FunctionType function1 = filter.getFunction();
+        FunctionType function2 = (FunctionType) function1.getExpression().get(0).getValue();
+
+        Assert.assertTrue(filterElement instanceof JAXBElement);
+        Assert.assertEquals(filterElement.getName().getLocalPart(),"Filter");
+        Assert.assertEquals(filter.getFunction().getName(),"function");
+        Assert.assertEquals(function1.getExpression().get(0).getName().getLocalPart(), "Function");
+        Assert.assertEquals(function2.getExpression().get(0).getValue().toString(),"element1");
+        Assert.assertEquals(function2.getExpression().get(1).getValue().toString(),"element2");
 
     }
+
 
 }

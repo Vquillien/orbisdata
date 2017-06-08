@@ -141,9 +141,9 @@ public class SqlToFes {
         Pattern filterSpatial = Pattern.compile("(ST_DWithin\\(|ST_Equals\\(|ST_Disjoint\\(|ST_Touches\\(|" +
                 "ST_Overlaps\\(|ST_Crosses\\(|ST_Intersects\\(|ST_Contains\\(|ST_Within\\()([\\w,( )]+)\\)");
 
-        Pattern filterLogical = Pattern.compile("(.*)(NOT|AND|OR)(.+)");
+        Pattern filterLogical = Pattern.compile("(.*)(NOT|AND|OR)(.*)");
 
-        Pattern filterFunction = Pattern.compile("([\\w ]*)\\(([\\w( )']*)\\)");
+        Pattern filterFunction = Pattern.compile("([\\w ]*)\\(([\\w( ),']*)\\)");
 
 
         Matcher matcherComparison = filterComparison.matcher(requestWhere);
@@ -398,10 +398,11 @@ public class SqlToFes {
         switch (matcherLogical.group(2)) {
             case "NOT":
                 UnaryLogicOpType unaryLogic = factory.createUnaryLogicOpType();
-                FilterType filterFirstParam = createFilter(matcherLogical.group(3).trim());
+                FilterType filterFirstParam = createFilter((matcherLogical.group(1).trim()+" "+
+                        matcherLogical.group(3).trim()).trim());
 
                 if (filterFirstParam.isSetComparisonOps()) {
-                    if(matcherLogical.group(3).trim().contains("=")){
+                    if(matcherLogical.group(3).trim().contains("=")){//case PropertyIsNotEquals
                         Pattern patternNotEqualTo = Pattern.compile("([\\w,( )]+)(=)([\\w,( )\'%]*)");
                         Matcher matcherNotEqualTo = patternNotEqualTo.matcher(matcherLogical.group(3).trim());
                         if(matcherNotEqualTo.matches()) {
@@ -422,7 +423,7 @@ public class SqlToFes {
                     }
 
                 } else if (filterFirstParam.isSetSpatialOps()) {
-                    if(matcherLogical.group(3).trim().startsWith("ST_Disjoint")){
+                    if(matcherLogical.group(3).trim().startsWith("ST_Disjoint")){//case BBOX
                         Pattern patternBBOX = Pattern.compile("(ST_Disjoint\\()([\\w,( )]+)\\)");
                         Matcher matcherBBOX = patternBBOX.matcher(matcherLogical.group(3).trim());
                         if(matcherBBOX.matches()) {
@@ -461,23 +462,27 @@ public class SqlToFes {
                 BinaryLogicOpType binaryLogicAnd = factory.createBinaryLogicOpType();
                 filterFirstParam = createFilter(matcherLogical.group(1).trim());
                 FilterType filterSecondParam = createFilter(matcherLogical.group(3).trim());
-
                 if (filterFirstParam.isSetComparisonOps()) {
                     binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getComparisonOps());
-                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getComparisonOps());
                 } else if (filterFirstParam.isSetSpatialOps()) {
                     binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getSpatialOps());
-                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getSpatialOps());
                 } else if (filterFirstParam.isSetLogicOps()) {
                     binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getLogicOps());
-                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getLogicOps());
                 } else if (filterFirstParam.isSetFunction()) {
                     binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(
                             factory.createFunction(filterFirstParam.getFunction()));
+                }
+                if (filterSecondParam.isSetComparisonOps()) {
+                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getComparisonOps());
+                } else if (filterSecondParam.isSetSpatialOps()) {
+                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getSpatialOps());
+                } else if (filterSecondParam.isSetLogicOps()) {
+                    binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getLogicOps());
+                } else if (filterSecondParam.isSetFunction()) {
                     binaryLogicAnd.getComparisonOpsOrSpatialOpsOrTemporalOps().add(
                             factory.createFunction(filterSecondParam.getFunction()));
                 }
-                filterElement.setLogicOps(factory.createLogicOps(binaryLogicAnd));
+                filterElement.setLogicOps(factory.createAnd(binaryLogicAnd));
                 break;
             case "OR":
                 BinaryLogicOpType binaryLogicOr = factory.createBinaryLogicOpType();
@@ -486,25 +491,31 @@ public class SqlToFes {
 
                 if (filterFirstParam.isSetComparisonOps()) {
                     binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getComparisonOps());
-                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getComparisonOps());
                 } else if (filterFirstParam.isSetSpatialOps()) {
                     binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getSpatialOps());
-                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getSpatialOps());
                 } else if (filterFirstParam.isSetLogicOps()) {
                     binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterFirstParam.getLogicOps());
-                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getLogicOps());
                 } else if (filterFirstParam.isSetFunction()) {
                     binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(
                             factory.createFunction(filterFirstParam.getFunction()));
+                }
+                if (filterSecondParam.isSetComparisonOps()) {
+                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getComparisonOps());
+                } else if (filterSecondParam.isSetSpatialOps()) {
+                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getSpatialOps());
+                } else if (filterSecondParam.isSetLogicOps()) {
+                    binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(filterSecondParam.getLogicOps());
+                } else if (filterSecondParam.isSetFunction()) {
                     binaryLogicOr.getComparisonOpsOrSpatialOpsOrTemporalOps().add(
                             factory.createFunction(filterSecondParam.getFunction()));
                 }
-                JAXBElement<LogicOpsType> jaxBelement = factory.createLogicOps(binaryLogicOr);
-                filterElement.setLogicOps(jaxBelement);
+                filterElement.setLogicOps(factory.createOr(binaryLogicOr));
                 break;
         }
         return filterElement;
     }
+
+
 
 //-----------------------------------------------Operator Function------------------------------------------------------
     /**
@@ -514,15 +525,25 @@ public class SqlToFes {
      */
     private static FilterType createFilterFunction(Matcher matcherFunction) {
         ObjectFactory factory = new ObjectFactory();
-
         String elements = matcherFunction.group(2).replaceAll(",", "");
+        String expression = "";
         String[] listElements = elements.split(" ");
         FilterType filterElement = factory.createFilterType();
         FunctionType function = factory.createFunctionType();
         function.setName(matcherFunction.group(1).trim());
-        for(int i=0; i<listElements.length;i++) {
-            function.getExpression().add(getExpressionObject(listElements[i].trim(), false));
+        if(matcherFunction.group(2).contains("(")){
+            for(int i=0; i<listElements.length;i++) {
+                expression += listElements[i]+" ";
+            }
+            expression = expression.trim()+")";
+            function.getExpression().add(getExpressionObject(expression, false));
+
+        }else {
+            for (int i = 0; i < listElements.length; i++) {
+                function.getExpression().add(getExpressionObject(listElements[i].trim(), false));
+            }
         }
+        filterElement.setFunction(function);
         return filterElement;
     }
 //----------------------------------------------------Expression--------------------------------------------------------
@@ -539,7 +560,7 @@ public class SqlToFes {
         JAXBElement jaxBElement = null;
 
         Pattern FilterDigit= Pattern.compile("[\\d,.]*");
-        Pattern FilterFunctionOrValueRef = Pattern.compile("([\\w ]*\\([\\w( )']*\\))|([\\w' ]*)");
+        Pattern FilterFunctionOrValueRef = Pattern.compile("([\\w ]*)\\(([\\w( ),']*)\\)|([\\w' ]*)");
 
         Matcher matcherFunctionOrValueRef = FilterFunctionOrValueRef.matcher(element);
         Matcher matcherDigit = FilterDigit.matcher(element);
@@ -559,14 +580,18 @@ public class SqlToFes {
 
             //Function Type
             if(matcherFunctionOrValueRef.group(1)!=null) {
-                JAXBElement expressionElement = getExpressionObject(matcherFunctionOrValueRef.group(1),false);
+                String[] listElements = matcherFunctionOrValueRef.group(2).split(" ");
                 FunctionType function = factory.createFunctionType();
-                function.getExpression().add(expressionElement);
+                JAXBElement expressionElement = null;
+                for(int i = 0; i<listElements.length;i++){
+                    expressionElement = getExpressionObject(listElements[i].trim(),false);
+                    function.getExpression().add(expressionElement);
+                }
                 JAXBElement<FunctionType> functionElement = factory.createFunction(function);
                 jaxBElement = functionElement;
 
             }else {//Value Reference
-                JAXBElement<String> valueRefElement = factory.createValueReference(matcherFunctionOrValueRef.group(2));
+                JAXBElement<String> valueRefElement = factory.createValueReference(matcherFunctionOrValueRef.group(3));
                 jaxBElement = valueRefElement;
             }
         }
